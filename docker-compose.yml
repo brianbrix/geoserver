@@ -56,9 +56,8 @@ services:
     labels:
       - "traefik.enable=true"
       # Route GeoServer under /geoserver
-      - "traefik.http.routers.geoserver.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.geoserver.rule=PathPrefix(`/management`)"
       - "traefik.http.routers.geoserver.entrypoints=web"
-      - "traefik.http.routers.frontend.priority=1"
        # Internal port
       - "traefik.http.services.geoserver.loadbalancer.server.port=80"
       - "traefik.http.middlewares.forward-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
@@ -69,4 +68,3 @@ networks:
 
 volumes:
   geoserver_data:
-  letsencrypt:
