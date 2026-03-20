@@ -7,25 +7,12 @@ services:
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
-      # HTTP entrypoint – permanently redirects everything to HTTPS.
-      # Traefik automatically bypasses this redirect for ACME HTTP-01 challenges.
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
-      # HTTPS entrypoint
-      - "--entrypoints.websecure.address=:443"
-      # Let's Encrypt certificate provider (HTTP-01 challenge over port 80)
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
     ports:
       - "80:80"
-      - "443:443"
-      - "8080:8080" # Traefik dashboard – restrict/firewall this port in production
+      - "8080:8080" # optional dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - letsencrypt:/letsencrypt
     networks:
       - web
 
@@ -33,28 +20,29 @@ services:
     image: kartoza/geoserver
     container_name: geoserver
     environment:
-      - GEOSERVER_ADMIN_USER=${GEOSERVER_ADMIN_USER:-admin}
-      - GEOSERVER_ADMIN_PASSWORD=${GEOSERVER_ADMIN_PASSWORD:-admin}
-      - GEOSERVER_PROXY_BASE_URL=${GEOSERVER_PROXY_BASE_URL:-https://amp-gis.dgstg.org/geoserver}
-      - GEOSERVER_CSRF_DISABLED=${GEOSERVER_CSRF_DISABLED:-true}
-      - GEOSERVER_CSRF_WHITELIST=${GEOSERVER_CSRF_WHITELIST:-amp-gis.dgstg.org}
-      - PROXY_BASE_URL=${PROXY_BASE_URL:-https://amp-gis.dgstg.org}
-    volumes:
-      - geoserver_data:/opt/geoserver/data_dir
+      - GEOSERVER_ADMIN_USER=admin
+      - GEOSERVER_ADMIN_PASSWORD=admin
+      - GEOSERVER_PROXY_BASE_URL=https://amp-gis.dgstg.org/geoserver
+      - GEOSERVER_CSRF_DISABLED=true
+      - GEOSERVER_CSRF_WHITELIST=amp-gis.dgstg.org
+      - PROXY_BASE_URL=https://amp-gis.dgstg.org/geoserver
     networks:
       - web
     labels:
       - "traefik.enable=true"
-      # HTTPS router for GeoServer
-      - "traefik.http.routers.geoserver.rule=Host(`${DOMAIN:-amp-gis.dgstg.org}`) && PathPrefix(`/geoserver`)"
-      - "traefik.http.routers.geoserver.entrypoints=websecure"
-      - "traefik.http.routers.geoserver.tls=true"
-      - "traefik.http.routers.geoserver.tls.certresolver=letsencrypt"
-      # Tell GeoServer it is behind an HTTPS proxy so it generates correct URLs
-      - "traefik.http.middlewares.forward-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.routers.geoserver.middlewares=forward-headers"
+
+      # Route GeoServer under /geoserver
+      - "traefik.http.routers.geoserver.rule=PathPrefix(`/geoserver`)"
+      - "traefik.http.routers.geoserver.entrypoints=web"
+
+      # Strip prefix before forwarding
+      #- "traefik.http.middlewares.geoserver-strip.stripprefix.prefixes=/geoserver"
+      #- "traefik.http.routers.geoserver.middlewares=geoserver-strip"
+
       # Internal port
       - "traefik.http.services.geoserver.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.forward-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.geoserver.middlewares=forward-headers"
 
   frontend:
     build:
@@ -67,15 +55,14 @@ services:
       - geoserver
     labels:
       - "traefik.enable=true"
-      # HTTPS router for the React app (catch-all on the domain)
-      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-amp-gis.dgstg.org}`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls=true"
-      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
-      # Lower priority than geoserver route so /geoserver still reaches GeoServer
+      # Route GeoServer under /geoserver
+      - "traefik.http.routers.geoserver.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.geoserver.entrypoints=web"
       - "traefik.http.routers.frontend.priority=1"
-      # Internal port served by nginx
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+       # Internal port
+      - "traefik.http.services.geoserver.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.forward-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.geoserver.middlewares=forward-headers"
 
 networks:
   web:
