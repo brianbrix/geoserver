@@ -56,12 +56,14 @@ services:
     labels:
       - "traefik.enable=true"
       # Route GeoServer under /geoserver
-      - "traefik.http.routers.geoserver.rule=PathPrefix(`/management`)"
-      - "traefik.http.routers.geoserver.entrypoints=web"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.priority=1"
+
        # Internal port
-      - "traefik.http.services.geoserver.loadbalancer.server.port=80"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
       - "traefik.http.middlewares.forward-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.routers.geoserver.middlewares=forward-headers"
+      - "traefik.http.routers.frontend.middlewares=forward-headers"
 
 networks:
   web:
