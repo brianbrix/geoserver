@@ -7,7 +7,7 @@ import {
 } from "../services/geoserverApi.js";
 
 const FORMAT_OPTIONS = [
-  { value: "shapefile", label: "Shapefile (.zip)", accept: ".zip,application/zip" },
+  { value: "shapefile", label: "Shapefile (.zip or .shp)", accept: ".zip,.shp,application/zip" },
   { value: "geotiff",   label: "GeoTIFF (.tif/.tiff)", accept: ".tif,.tiff,image/tiff" },
   { value: "csv",       label: "CSV (.csv)", accept: ".csv,text/csv" },
   { value: "gpkg",      label: "GeoPackage (.gpkg)", accept: ".gpkg" },
@@ -39,6 +39,8 @@ export default function DataUploader({ credentials, workspaces, onUploadDone }) 
     setFile(f);
     if (f && !storeName) setStoreName(f.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_]/g, "_"));
   }
+
+  const isBareShp = format === "shapefile" && file && file.name.toLowerCase().endsWith(".shp");
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -83,6 +85,13 @@ export default function DataUploader({ credentials, workspaces, onUploadDone }) 
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
+      {isBareShp && (
+        <div className="alert alert-error">
+          ⚠️ A bare <strong>.shp</strong> file is missing its required companion files
+          (<code>.dbf</code>, <code>.shx</code>). Please ZIP all shapefile components
+          together and upload the <strong>.zip</strong> archive instead.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         {/* Workspace */}
@@ -150,7 +159,7 @@ export default function DataUploader({ credentials, workspaces, onUploadDone }) 
           type="submit"
           className="btn-primary"
           style={{ marginTop: "1rem", width: "100%" }}
-          disabled={loading || !workspace || !storeName || !file}
+          disabled={loading || !workspace || !storeName || !file || isBareShp}
         >
           {loading ? <><span className="spinner" /> Uploading…</> : "Upload to GeoServer"}
         </button>

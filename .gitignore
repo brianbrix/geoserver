@@ -1,0 +1,5 @@
+# GeoServer data directory (bind-mounted from container, host-local data)
+geoserver_data/
+
+# Environment overrides
+.env

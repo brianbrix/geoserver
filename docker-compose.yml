@@ -26,6 +26,9 @@ services:
       - GEOSERVER_CSRF_DISABLED=true
       - GEOSERVER_CSRF_WHITELIST=amp-gis.dgstg.org
       - PROXY_BASE_URL=https://amp-gis.dgstg.org/geoserver
+      - GEOSERVER_DATA_DIR=/opt/geoserver_data
+    volumes:
+      - ./geoserver_data:/opt/geoserver_data
     networks:
       - web
     labels:
@@ -67,6 +70,3 @@ services:
 
 networks:
   web:
-
-volumes:
-  geoserver_data:

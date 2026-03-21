@@ -69,21 +69,24 @@ export async function listLayers(workspace, credentials) {
   return data?.layers?.layer ?? [];
 }
 
-// ─── Data Store upload (Shapefile ZIP) ────────────────────────────────────────
+// ─── Data Store upload (Shapefile ZIP or .shp) ───────────────────────────────
 
 /**
- * Upload a shapefile ZIP and publish it as a layer.
+ * Upload a shapefile and publish it as a layer.
+ * Accepts either a ZIP archive (containing .shp, .dbf, .shx, …) or a bare .shp file.
  * @param {string} workspace  - target workspace
  * @param {string} storeName  - name for the new datastore
- * @param {File}   file       - the ZIP file containing the shapefile
+ * @param {File}   file       - the ZIP or .shp file
  * @param {object} credentials
  */
 export async function uploadShapefile(workspace, storeName, file, credentials) {
+  const isZip = file.name.toLowerCase().endsWith(".zip");
+  const contentType = isZip ? "application/zip" : "application/octet-stream";
   await request(
     `/workspaces/${workspace}/datastores/${storeName}/file.shp`,
     {
       method: "PUT",
-      headers: { "Content-Type": "application/zip" },
+      headers: { "Content-Type": contentType },
       body: file,
     },
     credentials,
