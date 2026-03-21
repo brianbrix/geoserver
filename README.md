@@ -48,6 +48,11 @@ Key variables (set in `.env` at the project root):
 docker compose up -d --build
 ```
 
+> **GeoServer data directory:** On first start, Docker will create a `geoserver_data/`
+> folder in the project root and bind-mount it into the container at
+> `/opt/geoserver_data`.  All workspaces, stores, and uploaded files are persisted
+> there and are directly accessible on the host.
+
 | Service | URL |
 |---|---|
 | React front-end | <https://amp-gis.dgstg.org/> |
@@ -66,7 +71,7 @@ docker compose up -d --build
 1. Enter your GeoServer credentials in the **credentials bar** at the top (defaults: `admin` / `changeme`).
 2. **Workspaces** panel – create or delete workspaces.
 3. **Upload Data Source** panel – upload spatial data directly into a workspace:
-   - **Shapefile** – upload a `.zip` containing `.shp`, `.dbf`, `.shx`, and (optionally) `.prj` files.
+   - **Shapefile** – upload a `.zip` containing `.shp`, `.dbf`, `.shx`, and (optionally) `.prj` files.  A bare `.shp` file is not accepted on its own because GeoServer requires all companion files to be present.
    - **GeoTIFF** – upload a `.tif` / `.tiff` raster file.
    - **CSV** – upload a comma-separated file (requires the GeoServer CSV store extension).
    - **GeoPackage** – upload a `.gpkg` vector/raster package.
